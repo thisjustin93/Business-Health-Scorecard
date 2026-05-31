@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FamilyDesk — Nanny Timesheet</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Figtree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #16213e;
+  --ink-mid: #3d4f6e;
+  --ink-soft: #7a8aaa;
+  --ink-faint: #b0bdd0;
+  --bg: #f5f4f0;
+  --bg-warm: #eeecea;
+  --card: #ffffff;
+  --nurse: #2d7dd2;
+  --nurse-lt: #dbeeff;
+  --nanny: #1a9e6e;
+  --nanny-lt: #d2f5e8;
+  --gold: #c9962a;
+  --gold-lt: #fef3d8;
+  --danger: #d63031;
+  --success: #00b894;
+  --pending: #e17055;
+  --border: rgba(22,33,62,.09);
+  --border-md: rgba(22,33,62,.16);
+  --r: 14px;
+  --r-sm: 8px;
+  --sh: 0 2px 12px rgba(22,33,62,.07), 0 1px 4px rgba(22,33,62,.05);
+  --sh-md: 0 6px 24px rgba(22,33,62,.10), 0 2px 8px rgba(22,33,62,.06);
+  --sh-lg: 0 16px 48px rgba(22,33,62,.14);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Figtree',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.5}
+
+/* ═══ LAYER SYSTEM ═══ */
+.layer{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;padding:20px}
+.layer.hidden{display:none!important}
+
+/* ═══ LOGIN SCREEN ═══ */
+#login-layer{background:var(--ink);overflow:hidden}
+#login-layer::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 60% 40%,rgba(45,125,210,.18) 0%,transparent 70%),radial-gradient(ellipse 50% 50% at 20% 80%,rgba(201,150,42,.12) 0%,transparent 60%);pointer-events:none}
+.login-panel{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.10);backdrop-filter:blur(20px);border-radius:20px;padding:48px 40px;width:100%;max-width:460px;position:relative;z-index:1}
+.login-logo{font-family:'Playfair Display',serif;font-size:30px;color:#fff;letter-spacing:-.02em;margin-bottom:6px;text-align:center}
+.login-logo em{color:var(--gold);font-style:normal}
+.login-tagline{text-align:center;font-size:13px;color:rgba(255,255,255,.4);margin-bottom:36px}
+.role-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:28px}
+.role-card{padding:20px 16px;border-radius:var(--r);border:1.5px solid rgba(255,255,255,.12);cursor:pointer;text-align:center;transition:all .2s;background:rgba(255,255,255,.04)}
+.role-card:hover{border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.08);transform:translateY(-2px)}
+.role-card.selected{border-color:var(--gold);background:rgba(201,150,42,.12)}
+.role-icon{font-size:28px;margin-bottom:8px}
+.role-label{font-size:13px;font-weight:600;color:rgba(255,255,255,.8)}
+.role-desc{font-size:11px;color:rgba(255,255,255,.35);margin-top:3px;line-height:1.4}
+.pin-section{margin-bottom:20px}
+.pin-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:10px;display:block}
+.pin-dots{display:flex;gap:10px;justify-content:center;margin-bottom:16px}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.2);transition:all .2s}
+.pin-dot.filled{background:var(--gold);border-color:var(--gold)}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pin-key{padding:14px;border-radius:var(--r-sm);border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.06);color:rgba(255,255,255,.85);font-family:'Figtree',sans-serif;font-size:18px;font-weight:600;cursor:pointer;transition:all .15s;text-align:center}
+.pin-key:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.25)}
+.pin-key:active{transform:scale(.94)}
+.pin-key.del{font-size:14px;color:rgba(255,255,255,.45)}
+.pin-key.zero{grid-column:2}
+.login-btn{width:100%;padding:14px;background:var(--gold);border:none;border-radius:var(--r-sm);color:#fff;font-family:'Figtree',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;margin-top:4px;letter-spacing:.01em}
+.login-btn:hover{background:#b8861e;transform:translateY(-1px);box-shadow:0 6px 20px rgba(201,150,42,.35)}
+.login-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.login-error{text-align:center;font-size:12px;color:#ff7675;margin-top:10px;min-height:18px}
+.setup-link{text-align:center;margin-top:18px}
+.setup-link a{font-size:12px;color:rgba(255,255,255,.3);text-decoration:none;cursor:pointer;transition:color .2s}
+.setup-link a:hover{color:rgba(255,255,255,.6)}
+
+/* ═══ SETUP LAYER ═══ */
+#setup-layer{background:rgba(22,33,62,.85);backdrop-filter:blur(8px)}
+.setup-card{background:var(--card);border-radius:20px;padding:40px;max-width:480px;width:100%;box-shadow:var(--sh-lg);max-height:90vh;overflow-y:auto}
+.setup-title{font-family:'Playfair Display',serif;font-size:22px;color:var(--ink);margin-bottom:4px}
+.setup-sub{font-size:13px;color:var(--ink-soft);margin-bottom:28px}
+.form-field{margin-bottom:20px}
+.form-label{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:8px}
+.form-input{width:100%;padding:11px 14px;border:1.5px solid var(--border-md);border-radius:var(--r-sm);font-family:'Figtree',sans-serif;font-size:14px;color:var(--ink);background:var(--bg);outline:none;transition:border-color .2s}
+.form-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,150,42,.10)}
+.form-hint{font-size:11px;color:var(--ink-faint);margin-top:5px;line-height:1.5}
+.form-hint a{color:var(--gold);text-decoration:none}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.setup-actions{display:flex;gap:10px;margin-top:8px}
+.btn-primary{flex:1;padding:13px;background:var(--ink);color:#fff;border:none;border-radius:var(--r-sm);font-family:'Figtree',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s}
+.btn-primary:hover{background:var(--gold)}
+.btn-ghost{padding:13px 20px;background:transparent;color:var(--ink-soft);border:1.5px solid var(--border-md);border-radius:var(--r-sm);font-family:'Figtree',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-ghost:hover{border-color:var(--ink-mid);color:var(--ink)}
+.setup-error{font-size:12px;color:var(--danger);margin-top:8px;display:none}
+.pin-setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pin-setup-item label{display:block;font-size:12px;font-weight:600;color:var(--ink-mid);margin-bottom:6px}
+.pin-setup-item input{width:100%;padding:10px 14px;border:1.5px solid var(--border-md);border-radius:var(--r-sm);font-family:'Figtree',sans-serif;font-size:16px;letter-spacing:.2em;text-align:center;outline:none;background:var(--bg);color:var(--ink);transition:border-color .2s}
+.pin-setup-item input:focus{border-color:var(--gold)}
+
+/* ═══ APP SHELL ═══ */
+#app-layer{position:fixed;inset:0;display:none;flex-direction:column;background:var(--bg)}
+#app-layer.visible{display:flex}
+
+/* Header */
+.app-header{background:var(--ink);height:62px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:relative;z-index:50;flex-shrink:0}
+.app-header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:rgba(255,255,255,.06)}
+.header-brand{font-family:'Playfair Display',serif;font-size:20px;color:#fff;letter-spacing:-.01em}
+.header-brand em{color:var(--gold);font-style:normal}
+.header-right{display:flex;align-items:center;gap:14px}
+.user-pill{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.10);border-radius:20px;padding:6px 14px}
+.user-avatar{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+.user-avatar.family{background:var(--gold)}
+.user-avatar.nanny{background:var(--nanny)}
+.user-name{font-size:12px;font-weight:600;color:rgba(255,255,255,.75)}
+.header-icon-btn{width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:rgba(255,255,255,.6);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.header-icon-btn:hover{background:rgba(255,255,255,.14);color:#fff}
+
+/* Scrollable body */
+.app-body{flex:1;overflow-y:auto;padding:28px 24px 80px;max-width:1140px;margin:0 auto;width:100%}
+
+/* Month nav */
+.month-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+.month-heading{font-family:'Playfair Display',serif;font-size:34px;color:var(--ink);letter-spacing:-.02em}
+.month-heading .yr{font-size:22px;color:var(--ink-faint);margin-left:8px}
+.month-controls{display:flex;align-items:center;gap:8px}
+.ctrl-btn{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--border-md);background:var(--card);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--ink-mid);transition:all .15s;box-shadow:var(--sh)}
+.ctrl-btn:hover{border-color:var(--gold);color:var(--gold)}
+.today-pill{padding:7px 16px;border-radius:20px;border:1.5px solid var(--border-md);background:var(--card);font-family:'Figtree',sans-serif;font-size:12px;font-weight:600;color:var(--ink-soft);cursor:pointer;transition:all .15s;box-shadow:var(--sh)}
+.today-pill:hover{border-color:var(--gold);color:var(--gold)}
+
+/* Stats bar */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.stat-card{background:var(--card);border-radius:var(--r);padding:18px 20px;border:1px solid var(--border);box-shadow:var(--sh)}
+.stat-label{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:6px}
+.stat-value{font-family:'Playfair Display',serif;font-size:26px;color:var(--ink);letter-spacing:-.02em}
+.stat-value.hi{color:var(--gold)}
+.stat-sub{font-size:11px;color:var(--ink-faint);margin-top:2px}
+
+/* Import bar */
+.import-strip{background:var(--card);border:1.5px dashed var(--border-md);border-radius:var(--r);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;gap:12px}
+.import-strip.nanny-hidden{display:none}
+.import-left{display:flex;align-items:center;gap:12px}
+.import-ico{width:36px;height:36px;background:var(--nurse-lt);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.import-txt strong{display:block;font-size:13px;font-weight:700;color:var(--ink);margin-bottom:2px}
+.import-txt span{font-size:12px;color:var(--ink-soft)}
+.import-btn{padding:8px 16px;border-radius:var(--r-sm);font-family:'Figtree',sans-serif;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid var(--nurse);background:var(--nurse-lt);color:var(--nurse);transition:all .15s}
+.import-btn:hover{background:var(--nurse);color:#fff}
+
+/* Week tabs */
+.week-tabs{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap}
+.w-tab{padding:7px 15px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border-md);background:var(--card);color:var(--ink-soft);transition:all .15s;box-shadow:var(--sh);white-space:nowrap}
+.w-tab:hover{border-color:var(--gold);color:var(--gold)}
+.w-tab.active{background:var(--ink);border-color:var(--ink);color:#fff}
+.w-tab .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--nanny);margin-left:6px;vertical-align:middle}
+.w-tab.active .dot{background:rgba(255,255,255,.5)}
+
+/* Table card */
+.table-card{background:var(--card);border-radius:var(--r);border:1px solid var(--border);box-shadow:var(--sh);overflow:hidden;margin-bottom:24px}
+.section-bar{display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--bg-warm)}
+.sec-dot{width:8px;height:8px;border-radius:50%}
+.sec-dot.n{background:var(--nurse)}
+.sec-dot.nn{background:var(--nanny)}
+.sec-label{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-soft)}
+.sec-line{flex:1;height:1px;background:var(--border)}
+
+table{width:100%;border-collapse:collapse}
+thead tr{background:var(--bg-warm);border-bottom:1.5px solid var(--border-md)}
+th{padding:10px 14px;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft);text-align:left;white-space:nowrap}
+th.r{text-align:right}
+th.c{text-align:center}
+td{padding:0;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(245,244,240,.6)}
+tbody tr.today-row{background:#fffdf5}
+tbody tr.today-row td:first-child{border-left:3px solid var(--gold)}
+
+.day-cell{padding:12px 14px;min-width:100px}
+.day-name{font-size:13px;font-weight:700;color:var(--ink)}
+.day-name.wknd{color:var(--ink-faint)}
+.day-date{font-size:11px;color:var(--ink-faint);margin-top:1px}
+
+.t-input-wrap{padding:8px 10px}
+.t-input{width:80px;padding:7px 10px;border:1.5px solid var(--border-md);border-radius:var(--r-sm);font-family:'Figtree',sans-serif;font-size:12px;color:var(--ink);text-align:center;outline:none;transition:border-color .15s,box-shadow .15s;background:var(--bg)}
+.t-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,150,42,.10)}
+.t-input.nurse:focus{border-color:var(--nurse);box-shadow:0 0 0 3px rgba(45,125,210,.10)}
+.t-input:disabled{opacity:.5;cursor:not-allowed;background:var(--bg-warm)}
+.t-input.readonly{background:var(--bg-warm);pointer-events:none;border-color:transparent}
+
+.hrs-cell{padding:8px 14px;text-align:center;min-width:68px}
+.hrs-badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.hrs-badge.n{background:var(--nurse-lt);color:var(--nurse)}
+.hrs-badge.nn{background:var(--nanny-lt);color:var(--nanny)}
+.hrs-badge.empty{background:var(--bg-warm);color:var(--ink-faint)}
+
+.pay-cell{padding:8px 16px;text-align:right;font-size:13px;font-weight:700;color:var(--nanny);min-width:80px}
+.pay-cell.empty{color:var(--ink-faint);font-weight:400}
+
+/* Approval cell */
+.approval-cell{padding:6px 10px;min-width:90px}
+.status-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;border:none;cursor:default}
+.status-chip.submitted{background:#fff3cd;color:#856404}
+.status-chip.approved{background:#d2f5e8;color:#1a9e6e}
+.status-chip.paid{background:#cfe2ff;color:#0a58ca}
+.status-chip.confirmed{background:#d1e7dd;color:#0f5132}
+.status-chip.none{background:var(--bg-warm);color:var(--ink-faint)}
+.action-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--r-sm);font-family:'Figtree',sans-serif;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid;transition:all .15s;white-space:nowrap}
+.action-btn:hover{transform:translateY(-1px)}
+.btn-submit{background:#fff3cd;border-color:#f0c040;color:#856404}
+.btn-submit:hover{background:#f0c040;color:#fff}
+.btn-approve{background:var(--nanny-lt);border-color:var(--nanny);color:var(--nanny)}
+.btn-approve:hover{background:var(--nanny);color:#fff}
+.btn-pay{background:#cfe2ff;border-color:#0a58ca;color:#0a58ca}
+.btn-pay:hover{background:#0a58ca;color:#fff}
+.btn-confirm{background:#d1e7dd;border-color:#0f5132;color:#0f5132}
+.btn-confirm:hover{background:#0f5132;color:#fff}
+
+/* Week total row */
+.week-total-tr{background:linear-gradient(90deg,var(--bg-warm),var(--card))}
+.week-total-tr td{padding:12px 14px!important;border-top:2px solid var(--border-md)!important}
+.wtotal-label{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft)}
+.wtotal-hrs{font-size:13px;font-weight:700;color:var(--nanny);text-align:center}
+.wtotal-pay{font-family:'Playfair Display',serif;font-size:20px;color:var(--gold);text-align:right;padding-right:16px}
+
+/* Payment log modal */
+#log-modal{position:fixed;inset:0;z-index:200;background:rgba(22,33,62,.7);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px}
+#log-modal.hidden{display:none}
+.log-card{background:var(--card);border-radius:20px;padding:36px;max-width:540px;width:100%;box-shadow:var(--sh-lg);max-height:85vh;overflow-y:auto}
+.log-title{font-family:'Playfair Display',serif;font-size:22px;margin-bottom:4px}
+.log-sub{font-size:13px;color:var(--ink-soft);margin-bottom:24px}
+.log-entry{padding:14px 0;border-bottom:1px solid var(--border);display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start}
+.log-entry:last-child{border-bottom:none}
+.log-entry-date{font-size:13px;font-weight:700;color:var(--ink)}
+.log-entry-detail{font-size:12px;color:var(--ink-soft);margin-top:3px;line-height:1.6}
+.log-entry-status{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.log-stamp{font-size:10px;color:var(--ink-faint);text-align:right}
+.log-empty{text-align:center;padding:40px;color:var(--ink-faint);font-size:14px}
+.log-close{margin-top:20px;width:100%;padding:12px;background:var(--ink);color:#fff;border:none;border-radius:var(--r-sm);font-family:'Figtree',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:background .2s}
+.log-close:hover{background:var(--gold)}
+
+/* Footer */
+.month-footer{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.foot-card{background:var(--card);border-radius:var(--r);padding:22px 24px;border:1px solid var(--border);box-shadow:var(--sh)}
+.foot-title{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:10px}
+.foot-big{font-family:'Playfair Display',serif;font-size:38px;color:var(--ink);letter-spacing:-.03em}
+.foot-big.pay{color:var(--gold)}
+.foot-note{font-size:12px;color:var(--ink-faint);margin-top:4px}
+
+/* Toast */
+#toast{position:fixed;bottom:24px;right:24px;background:var(--ink);color:#fff;padding:12px 18px;border-radius:var(--r-sm);font-size:13px;font-weight:500;opacity:0;transform:translateY(6px);transition:opacity .3s,transform .3s;pointer-events:none;z-index:999;max-width:300px;box-shadow:var(--sh-md)}
+#toast.show{opacity:1;transform:translateY(0)}
+#toast.ok{border-left:3px solid var(--nanny)}
+#toast.err{border-left:3px solid var(--danger)}
+#toast.info{border-left:3px solid var(--gold)}
+
+/* Loading */
+.load-td{padding:52px!important;text-align:center;color:var(--ink-faint);font-size:14px}
+.spin{display:inline-block;width:18px;height:18px;border:2px solid var(--border-md);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;margin-right:8px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.weekend-row td{ background:#f8f8f8; opacity:0.7; }
+.clear-btn{display:block;margin-top:5px;padding:2px 7px;font-size:10px;background:#fff0f0;border:1px solid #ffb3b3;color:#c0392b;border-radius:4px;cursor:pointer;transition:all .15s}
+.clear-btn:hover{background:#c0392b;color:#fff}
+.wknd-input{ background:#f0f0f0!important; }
+.action-btn{ font-size:13px; padding:10px 16px; }
+.wtotal-pay{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+
+@media(max-width:680px){
+  .stats-row{grid-template-columns:1fr 1fr}
+  .month-footer{grid-template-columns:1fr}
+  .app-body{padding:12px 8px 60px}
+  .import-strip{flex-direction:column;align-items:flex-start}
+  .t-input{width:72px;font-size:11px;padding:6px 6px}
+  .action-btn{width:100%;justify-content:center;padding:12px;font-size:14px;border-radius:10px;margin-top:4px}
+  .wtotal-pay{flex-direction:column;align-items:flex-end}
+  .month-heading{font-size:26px}
+  .week-tabs{gap:4px}
+  .w-tab{font-size:11px;padding:6px 10px}
+  .stat-card{padding:14px}
+  .stat-value{font-size:22px}
+  .app-header{padding:0 14px}
+  table{font-size:13px}
+  th,td{padding:0}
+  .day-cell{padding:10px 8px;min-width:70px}
+  .hrs-cell{padding:6px 8px}
+  .pay-cell{padding:6px 10px;font-size:13px}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOGIN LAYER ═══ -->
+<div class="layer" id="login-layer">
+  <div class="login-panel">
+    <div class="login-logo">family<em>desk</em></div>
+    <div class="login-tagline">Schedule & nanny timesheet tracker</div>
+
+    <div class="role-cards">
+      <div class="role-card selected" id="rc-family" onclick="selectRole('family')">
+        <div class="role-icon">🏠</div>
+        <div class="role-label">Family</div>
+        <div class="role-desc">Full access, approvals & payments</div>
+      </div>
+      <div class="role-card" id="rc-nanny" onclick="selectRole('nanny')">
+        <div class="role-icon">👩‍👧</div>
+        <div class="role-label">Nanny</div>
+        <div class="role-desc">Enter hours & confirm payment</div>
+      </div>
+    </div>
+
+    <div class="pin-section">
+      <span class="pin-label">Enter PIN</span>
+      <div class="pin-dots" id="pin-dots">
+        <div class="pin-dot" id="pd0"></div>
+        <div class="pin-dot" id="pd1"></div>
+        <div class="pin-dot" id="pd2"></div>
+        <div class="pin-dot" id="pd3"></div>
+      </div>
+      <div class="pin-pad">
+        <button class="pin-key" onclick="pinKey('1')">1</button>
+        <button class="pin-key" onclick="pinKey('2')">2</button>
+        <button class="pin-key" onclick="pinKey('3')">3</button>
+        <button class="pin-key" onclick="pinKey('4')">4</button>
+        <button class="pin-key" onclick="pinKey('5')">5</button>
+        <button class="pin-key" onclick="pinKey('6')">6</button>
+        <button class="pin-key" onclick="pinKey('7')">7</button>
+        <button class="pin-key" onclick="pinKey('8')">8</button>
+        <button class="pin-key" onclick="pinKey('9')">9</button>
+        <button class="pin-key del" onclick="pinDel()">⌫</button>
+        <button class="pin-key zero" onclick="pinKey('0')">0</button>
+      </div>
+    </div>
+
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Sign In →</button>
+    <div class="login-error" id="login-error"></div>
+    
+  </div>
+</div>
+
+<!-- ═══ SETUP LAYER ═══ -->
+<div class="layer hidden" id="setup-layer">
+  <div class="setup-card">
+    <div class="setup-title">Setup</div>
+    <div class="setup-sub">Connect your Google Sheet and set PINs for each role.</div>
+
+    <div class="form-field" style="background:#f0faf5;border:1px solid #b7e4cc;border-radius:8px;padding:12px 14px;">
+      <div style="font-size:12px;color:#1a9e6e;font-weight:600;">✓ Connected to Firebase — no additional setup needed</div>
+      <div style="font-size:11px;color:#5a8a70;margin-top:4px;">Your data syncs automatically across all devices.</div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-field">
+        <label class="form-label">Hourly Rate ($)</label>
+        <input class="form-input" id="s-rate" type="number" value="15" min="1" step="0.5" />
+      </div>
+      <div class="form-field">
+        <label class="form-label">Default Nanny Start</label>
+        <input class="form-input" id="s-defstart" type="time" value="10:30" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label class="form-label">Default Nanny End</label>
+        <input class="form-input" id="s-defend" type="time" value="18:00" />
+      </div>
+    </div>
+
+    <div class="form-field">
+      <label class="form-label">PINs (4 digits each)</label>
+      <div class="pin-setup-grid">
+        <div class="pin-setup-item">
+          <label>Family PIN</label>
+          <input id="s-fpin" type="password" maxlength="4" inputmode="numeric" placeholder="••••" />
+        </div>
+        <div class="pin-setup-item">
+          <label>Nanny PIN</label>
+          <input id="s-npin" type="password" maxlength="4" inputmode="numeric" placeholder="••••" />
+        </div>
+      </div>
+      <div class="form-hint">Share the Nanny PIN only with your nanny. Keep the Family PIN private.</div>
+    </div>
+
+    <div class="setup-actions">
+      <button class="btn-ghost" onclick="closeSetup()">Cancel</button>
+      <button class="btn-primary" onclick="saveSetup()">Save & Continue →</button>
+    </div>
+    <div class="setup-error" id="setup-error"></div>
+  </div>
+</div>
+
+<!-- ═══ APP LAYER ═══ -->
+<div id="app-layer">
+  <header class="app-header">
+    <div class="header-brand">family<em>desk</em></div>
+    <div class="header-right">
+      <div class="user-pill">
+        <div class="user-avatar" id="ua"></div>
+        <span class="user-name" id="un"></span>
+      </div>
+      <span id="save-status" style="font-size:11px;color:rgba(255,255,255,.4);min-width:60px;text-align:right"></span>
+      <button class="header-icon-btn" title="Payment Log" onclick="openLog()">📋</button>
+      <button class="header-icon-btn" id="settings-btn" title="Settings" onclick="openSetup()" style="display:none">⚙</button>
+      <button class="header-icon-btn" title="Sign Out" onclick="signOut()">⏏</button>
+    </div>
+  </header>
+
+  <div class="app-body">
+    <div class="month-bar">
+      <div class="month-heading">
+        <span id="month-name">January</span>
+        <span class="yr" id="yr-name">2025</span>
+      </div>
+      <div class="month-controls">
+        <button class="today-pill" onclick="goToday()">Today</button>
+        <button class="ctrl-btn" onclick="prevMonth()">‹</button>
+        <button class="ctrl-btn" onclick="nextMonth()">›</button>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">Nurse Shifts</div><div class="stat-value" id="s-nshifts">0</div><div class="stat-sub">this month</div></div>
+      <div class="stat-card"><div class="stat-label">Nanny Shifts</div><div class="stat-value" id="s-nnshifts">0</div><div class="stat-sub">this month</div></div>
+      <div class="stat-card"><div class="stat-label">Total Hours</div><div class="stat-value" id="s-hrs">0</div><div class="stat-sub">nanny hours</div></div>
+      <div class="stat-card"><div class="stat-label">Total Pay</div><div class="stat-value hi" id="s-pay">$0</div><div class="stat-sub">this month</div></div>
+    </div>
+
+    <div class="import-strip" id="import-strip">
+      <div class="import-left">
+        <div class="import-ico">📅</div>
+        <div class="import-txt">
+          <strong>Import NurseGrid Schedule</strong>
+          <span>Export .ics from NurseGrid app → upload here to auto-fill shifts</span>
+        </div>
+      </div>
+      <div>
+        <input type="file" id="ical-input" accept=".ics" style="display:none" onchange="importICal(this)">
+        <button class="import-btn" onclick="document.getElementById('ical-input').click()">📤 Upload .ics</button>
+      </div>
+    </div>
+
+    <div class="week-tabs" id="week-tabs"></div>
+
+    <div class="table-card">
+      <div class="section-bar">
+        <div class="sec-dot n"></div><div class="sec-label">Nurse Schedule</div>
+        <div class="sec-line"></div>
+        <div class="sec-dot nn"></div><div class="sec-label">Nanny Timesheet</div>
+        <div class="sec-line"></div>
+        <div class="sec-dot" style="background:var(--gold)"></div><div class="sec-label">Approvals & Payment</div>
+      </div>
+      <table>
+        <thead id="table-head">
+          <tr>
+            <th>Day</th>
+            <th>Nurse In</th>
+            <th>Nurse Out</th>
+            <th>Nanny In</th>
+            <th>Nanny Out</th>
+            <th class="c">Hrs</th>
+            <th class="r">Pay</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="month-footer">
+      <div class="foot-card">
+        <div class="foot-title">Monthly Nanny Hours</div>
+        <div class="foot-big" id="f-hrs">0 hrs</div>
+        <div class="foot-note" id="f-shifts">0 shifts</div>
+      </div>
+      <div class="foot-card">
+        <div class="foot-title">Monthly Nanny Pay</div>
+        <div class="foot-big pay" id="f-pay">$0.00</div>
+        <div class="foot-note" id="f-rate">at $15/hr</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PAYMENT LOG MODAL ═══ -->
+<div id="log-modal" class="hidden">
+  <div class="log-card">
+    <div class="log-title">Payment Log</div>
+    <div class="log-sub">Full record of all approved & confirmed payments</div>
+    <div id="log-entries"></div>
+    <button class="log-close" onclick="closeLog()">Close</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// CONFIG & STATE
+// ══════════════════════════════════════════════════════════
+let RATE=15, DEF_START='10:30', DEF_END='18:00';
+let FAMILY_PIN='', NANNY_PIN='';
+let currentRole=null; // 'family' | 'nanny'
+let currentYear, currentMonth, activeWeek=-1;
+let shiftData={}, payLog=[], weekRegistry={};
+let saveQueue={}, saveTimer=null, isLoading=false;
+let pinBuffer='';
+let selectedRole='family';
+
+// Firebase config
+const FB_URL='https://familydesk-9f049-default-rtdb.firebaseio.com';
+const FB_KEY='AIzaSyD0XuSREtboAsCW92np8_xqhxeT9xlzEP0';
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DOW=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+// ══════════════════════════════════════════════════════════
+// PIN LOGIN
+// ══════════════════════════════════════════════════════════
+function selectRole(r){
+  selectedRole=r;
+  document.getElementById('rc-family').classList.toggle('selected',r==='family');
+  document.getElementById('rc-nanny').classList.toggle('selected',r==='nanny');
+  pinBuffer='';
+  updatePinDots();
+  document.getElementById('login-error').textContent='';
+}
+
+function pinKey(k){
+  if(pinBuffer.length>=4) return;
+  pinBuffer+=k;
+  updatePinDots();
+  if(pinBuffer.length===4) setTimeout(doLogin,200);
+}
+
+function pinDel(){
+  pinBuffer=pinBuffer.slice(0,-1);
+  updatePinDots();
+}
+
+function updatePinDots(){
+  for(let i=0;i<4;i++){
+    document.getElementById('pd'+i).classList.toggle('filled',i<pinBuffer.length);
+  }
+}
+
+function doLogin(){
+  const pin = pinBuffer;
+  pinBuffer=''; updatePinDots();
+  if(selectedRole==='family' && pin===FAMILY_PIN){
+    currentRole='family';
+    launchApp();
+  } else if(selectedRole==='nanny' && pin===NANNY_PIN){
+    currentRole='nanny';
+    launchApp();
+  } else {
+    showLoginError('Incorrect PIN. Try again.');
+  }
+}
+
+function showLoginError(msg){ document.getElementById('login-error').textContent=msg; }
+
+function launchApp(){
+  document.getElementById('login-layer').classList.add('hidden');
+  document.getElementById('app-layer').classList.add('visible');
+  const isFamily=currentRole==='family';
+  const ua=document.getElementById('ua');
+  ua.textContent=isFamily?'F':'N';
+  ua.className='user-avatar '+(isFamily?'family':'nanny');
+  document.getElementById('un').textContent=isFamily?'Family':'Nanny';
+  document.getElementById('settings-btn').style.display=isFamily?'flex':'none';
+  document.getElementById('import-strip').classList.toggle('nanny-hidden', !isFamily);
+  // Swap table headers based on role
+  const thead=document.getElementById('table-head');
+  if(thead){
+    if(isFamily){
+      thead.innerHTML='<tr><th>Day</th><th>Nurse In</th><th>Nurse Out</th><th>Nanny In</th><th>Nanny Out</th><th class="c">Hrs</th><th class="r">Pay</th></tr>';
+    } else {
+      thead.innerHTML='<tr><th>Day</th><th>Start</th><th>End</th><th class="c">Hours</th><th class="r">Pay</th><th>Status</th></tr>';
+    }
+  }
+  const now=new Date(); currentYear=now.getFullYear(); currentMonth=now.getMonth(); activeWeek=-1;
+  loadAll();
+}
+
+function signOut(){
+  currentRole=null; pinBuffer=''; updatePinDots();
+  document.getElementById('app-layer').classList.remove('visible');
+  document.getElementById('login-layer').classList.remove('hidden');
+  document.getElementById('login-error').textContent='';
+}
+
+// ══════════════════════════════════════════════════════════
+// SETUP
+// ══════════════════════════════════════════════════════════
+function openSetup(){
+  document.getElementById('s-rate').value=RATE;
+  document.getElementById('s-defstart').value=DEF_START;
+  document.getElementById('s-defend').value=DEF_END;
+  document.getElementById('s-fpin').value=FAMILY_PIN;
+  document.getElementById('s-npin').value=NANNY_PIN;
+  document.getElementById('setup-error').style.display='none';
+  document.getElementById('setup-layer').classList.remove('hidden');
+}
+function closeSetup(){ document.getElementById('setup-layer').classList.add('hidden'); }
+function showSetupErr(m){ const e=document.getElementById('setup-error'); e.textContent=m; e.style.display='block'; }
+
+function saveSetup(){
+  const rate=parseFloat(document.getElementById('s-rate').value)||15;
+  const ds=document.getElementById('s-defstart').value||'10:30';
+  const de=document.getElementById('s-defend').value||'18:00';
+  const fp=document.getElementById('s-fpin').value.trim();
+  const np=document.getElementById('s-npin').value.trim();
+  if(fp.length!==4||!/^\d+$/.test(fp)){ showSetupErr('Family PIN must be exactly 4 digits.'); return; }
+  if(np.length!==4||!/^\d+$/.test(np)){ showSetupErr('Nanny PIN must be exactly 4 digits.'); return; }
+  if(fp===np){ showSetupErr('PINs must be different.'); return; }
+  RATE=rate; DEF_START=ds; DEF_END=de; FAMILY_PIN=fp; NANNY_PIN=np;
+  persist();
+  closeSetup();
+  showToast('Settings saved','ok');
+  if(currentRole) { updateRateDisplay(); renderTable(); updateSummary(); }
+}
+
+function persist(){
+  localStorage.setItem('fd2_rate',RATE);
+  localStorage.setItem('fd2_ds',DEF_START);
+  localStorage.setItem('fd2_de',DEF_END);
+  localStorage.setItem('fd2_fp',FAMILY_PIN);
+  localStorage.setItem('fd2_np',NANNY_PIN);
+}
+
+function loadPersist(){
+  RATE=parseFloat(localStorage.getItem('fd2_rate'))||15;
+  DEF_START=localStorage.getItem('fd2_ds')||'10:30';
+  DEF_END=localStorage.getItem('fd2_de')||'18:00';
+  FAMILY_PIN=localStorage.getItem('fd2_fp')||'';
+  NANNY_PIN=localStorage.getItem('fd2_np')||'';
+}
+
+function updateRateDisplay(){
+  document.getElementById('f-rate').textContent='at $'+RATE+'/hr';
+}
+
+// ══════════════════════════════════════════════════════════
+// FIREBASE REST API
+// ══════════════════════════════════════════════════════════
+async function fbGet(path){
+  const r=await fetch(`${FB_URL}/${path}.json?key=${FB_KEY}`);
+  if(!r.ok) throw new Error('Firebase read failed: '+r.status);
+  return r.json();
+}
+
+async function fbSet(path,data){
+  const r=await fetch(`${FB_URL}/${path}.json?key=${FB_KEY}`,{
+    method:'PUT',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(data)
+  });
+  if(!r.ok) throw new Error('Firebase write failed: '+r.status);
+  return r.json();
+}
+
+async function fbPush(path,data){
+  const r=await fetch(`${FB_URL}/${path}.json?key=${FB_KEY}`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(data)
+  });
+  if(!r.ok) throw new Error('Firebase push failed: '+r.status);
+  return r.json();
+}
+
+// Date key safe for Firebase (replace - with _)
+function dk(date){ return date.replace(/-/g,'_'); }
+function undk(key){ return key.replace(/_/g,'-'); }
+
+async function loadAll(){
+  isLoading=true; renderTable();
+  try {
+    const [shifts, logs] = await Promise.all([
+      fbGet('shifts'),
+      fbGet('paylog')
+    ]);
+    shiftData={};
+    if(shifts){
+      Object.entries(shifts).forEach(([k,v])=>{
+        shiftData[undk(k)]={
+          nurseStart:v.nurseStart||'', nurseEnd:v.nurseEnd||'',
+          nannyStart:v.nannyStart||'', nannyEnd:v.nannyEnd||'',
+          status:v.status||'',
+          paidAt:v.paidAt||'', paidBy:v.paidBy||'',
+          confirmedAt:v.confirmedAt||'', confirmedBy:v.confirmedBy||''
+        };
+      });
+    }
+    payLog=[];
+    if(logs){
+      Object.values(logs).forEach(v=>{
+        if(v.date) payLog.push(v);
+      });
+      payLog.sort((a,b)=>a.ts>b.ts?1:-1);
+    }
+  } catch(e){ showToast('Load error: '+e.message,'err'); }
+  isLoading=false;
+  buildWeekTabs(); renderTable(); updateSummary();
+}
+
+function queueSave(date,fields){
+  if(!saveQueue[date]) saveQueue[date]={};
+  Object.assign(saveQueue[date],fields);
+  setSaveStatus('saving');
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(flushSave,800);
+}
+
+function setSaveStatus(state){
+  const el=document.getElementById('save-status');
+  if(!el) return;
+  if(state==='saving') el.textContent='Saving…';
+  else if(state==='saved'){ el.textContent='Saved ✓'; setTimeout(()=>el.textContent='',3000); }
+  else if(state==='error'){ el.textContent='Save failed ✗'; }
+}
+
+async function flushSave(){
+  if(Object.keys(saveQueue).length===0) return;
+  const q={...saveQueue}; saveQueue={};
+  setSaveStatus('saving');
+  try {
+    for(const [date,fields] of Object.entries(q)){
+      if(!shiftData[date]) shiftData[date]={nurseStart:'',nurseEnd:'',nannyStart:'',nannyEnd:'',status:'',paidAt:'',paidBy:'',confirmedAt:'',confirmedBy:''};
+      Object.assign(shiftData[date],fields);
+      await fbSet('shifts/'+dk(date), shiftData[date]);
+    }
+    setSaveStatus('saved');
+    updateSummary();
+  } catch(e){
+    setSaveStatus('error');
+    showToast('Save failed: '+e.message,'err');
+    Object.assign(saveQueue,q);
+  }
+}
+
+async function appendLog(entry){
+  await fbPush('paylog', entry);
+  payLog.push(entry);
+}
+
+// ══════════════════════════════════════════════════════════
+// APPROVAL & PAYMENT ACTIONS
+// ══════════════════════════════════════════════════════════
+function submitWeek(dates){
+  const hasTimes=dates.some(d=>{const s=shiftData[d]; return s&&s.nannyStart&&s.nannyEnd;});
+  if(!hasTimes){ showToast('Enter at least one shift before submitting','err'); return; }
+  if(!confirm('Submit this week for family approval?')) return;
+  const ts=nowTs();
+  dates.forEach(d=>{
+    if(shiftData[d]&&shiftData[d].nannyStart&&!shiftData[d].status){
+      queueSave(d,{status:'submitted'});
+    }
+  });
+  appendLog({date:dates[0],action:'submitted',by:'Nanny',ts,note:'Week submitted for approval'});
+  showToast('Week submitted for approval ✓','ok');
+  setTimeout(()=>{buildWeekTabs();renderTable();},600);
+}
+
+function approveWeek(wkKey){
+  const reg=weekRegistry[wkKey]; if(!reg) return;
+  const dates=reg.dates;
+  if(!confirm("Approve this week's hours?")) return;
+  const ts=nowTs();
+  dates.forEach(d=>{
+    if(!shiftData[d]) shiftData[d]={nurseStart:'',nurseEnd:'',nannyStart:'',nannyEnd:'',status:'',paidAt:'',paidBy:'',confirmedAt:'',confirmedBy:''};
+    shiftData[d].status='approved';
+    queueSave(d,{status:'approved'});
+  });
+  appendLog({date:dates[0],action:'approved',by:'Family',ts,note:'Hours approved by family'});
+  showToast('Hours approved ✓','ok');
+  setTimeout(()=>{buildWeekTabs();renderTable();},600);
+}
+
+function markPaid(wkKey){
+  const reg=weekRegistry[wkKey]; if(!reg) return;
+  const dates=reg.dates, weekPay=reg.pay;
+  if(!confirm('Confirm cash payment of '+weekPay+' has been made?')) return;
+  const ts=nowTs();
+  dates.forEach(d=>{
+    if(shiftData[d]){
+      shiftData[d].status='paid'; shiftData[d].paidAt=ts; shiftData[d].paidBy='Family';
+      queueSave(d,{status:'paid',paidAt:ts,paidBy:'Family'});
+    }
+  });
+  appendLog({date:dates[0],action:'paid',by:'Family',ts,weekPay,note:'Cash payment made'});
+  showToast('Payment recorded ✓','ok');
+  setTimeout(()=>{buildWeekTabs();renderTable();},600);
+}
+
+function confirmPayment(wkKey){
+  const reg=weekRegistry[wkKey]; if(!reg) return;
+  const dates=reg.dates, weekPay=reg.nannyPay||reg.pay;
+  if(!confirm('Confirm you received cash payment of '+weekPay+'?')) return;
+  const ts=nowTs();
+  dates.forEach(d=>{
+    if(shiftData[d]&&shiftData[d].status==='paid'){
+      shiftData[d].status='confirmed'; shiftData[d].confirmedAt=ts; shiftData[d].confirmedBy='Nanny';
+      queueSave(d,{status:'confirmed',confirmedAt:ts,confirmedBy:'Nanny'});
+    }
+  });
+  appendLog({date:dates[0],action:'confirmed',by:'Nanny',ts,weekPay,note:'Payment receipt confirmed by nanny'});
+  showToast('Payment confirmed ✓','ok');
+  setTimeout(()=>{buildWeekTabs();renderTable();},600);
+}
+
+async function clearDay(date){
+  if(!confirm('Clear all hours for '+fmtDate(date)+'?')) return;
+  if(!shiftData[date]) shiftData[date]={nurseStart:'',nurseEnd:'',nannyStart:'',nannyEnd:'',status:'',paidAt:'',paidBy:'',confirmedAt:'',confirmedBy:''};
+  const cleared={nurseStart:'',nurseEnd:'',nannyStart:'',nannyEnd:'',status:'',paidAt:'',paidBy:'',confirmedAt:'',confirmedBy:''};
+  Object.assign(shiftData[date], cleared);
+  try {
+    await fbSet('shifts/'+dk(date), cleared);
+    setSaveStatus('saved');
+    showToast('Day cleared ✓','ok');
+  } catch(e){
+    showToast('Clear failed: '+e.message,'err');
+  }
+  buildWeekTabs(); renderTable(); updateSummary();
+}
+
+function nowTs(){
+  return new Date().toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true});
+}
+
+// ══════════════════════════════════════════════════════════
+// CALENDAR UTILS
+// ══════════════════════════════════════════════════════════
+function daysInMonth(y,m){ return new Date(y,m+1,0).getDate(); }
+
+function weeksInMonth(y,m){
+  const total=daysInMonth(y,m);
+  const firstDow=new Date(y,m,1).getDay(); // 0=Sun
+  const offset=firstDow===0?6:firstDow-1; // offset to Monday
+  const weeks=[];
+  let start=1-offset;
+  while(start<=total){
+    const wk=[];
+    for(let i=0;i<7;i++){
+      const d=start+i;
+      if(d>=1&&d<=total){
+        const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        wk.push({day:d,date:ds,dow:i});
+      } else { wk.push(null); }
+    }
+    if(wk.some(Boolean)) weeks.push(wk);
+    start+=7;
+  }
+  return weeks;
+}
+
+function parseTime(t){ if(!t) return null; const[h,m]=t.split(':').map(Number); return h+m/60; }
+function calcHrs(s,e){ const sv=parseTime(s),ev=parseTime(e); if(sv===null||ev===null) return null; const h=ev-sv; return h>0?h:null; }
+function fmtHrs(h){ if(!h) return ''; const hr=Math.floor(h),mn=Math.round((h-hr)*60); return mn?`${hr}h ${mn}m`:`${hr}h`; }
+function fmtPay(h){ if(!h) return ''; return '$'+(h*RATE).toFixed(2); }
+function fmtDate(ds){ const[y,m,d]=ds.split('-'); return new Date(y,m-1,d).toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+function isToday(ds){ return ds===new Date().toISOString().slice(0,10); }
+
+// ══════════════════════════════════════════════════════════
+// WEEK TABS
+// ══════════════════════════════════════════════════════════
+function buildWeekTabs(){
+  const wks=weeksInMonth(currentYear,currentMonth);
+  const c=document.getElementById('week-tabs');
+  c.innerHTML='';
+  const btn=(label,cls,fn)=>{ const b=document.createElement('button'); b.className='w-tab '+cls; b.innerHTML=label; b.onclick=fn; c.appendChild(b); };
+  btn('All Weeks',activeWeek===-1?'active':'',()=>{ activeWeek=-1; buildWeekTabs(); renderTable(); });
+  wks.forEach((wk,i)=>{
+    const valid=wk.filter(Boolean);
+    if(!valid.length) return;
+    const hasData=valid.some(d=>shiftData[d.date]?.nannyStart);
+    const f=valid[0],l=valid[valid.length-1];
+    const dot=hasData?'<span class="dot"></span>':'';
+    btn(`${fmtDate(f.date)} – ${fmtDate(l.date)}${dot}`,
+      (activeWeek===i?'active':'')+' ',
+      ()=>{ activeWeek=i; buildWeekTabs(); renderTable(); });
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// RENDER — mobile-first card layout
+// ══════════════════════════════════════════════════════════
+function renderTable(){
+  document.getElementById('month-name').textContent=MONTHS[currentMonth];
+  document.getElementById('yr-name').textContent=currentYear;
+  const tbody=document.getElementById('tbody');
+  if(isLoading){ tbody.innerHTML='<tr><td class="load-td" colspan="6"><span class="spin"></span>Loading…</td></tr>'; return; }
+
+  const wks=weeksInMonth(currentYear,currentMonth);
+  const display=activeWeek===-1?wks:[wks[activeWeek]].filter(Boolean);
+  tbody.innerHTML='';
+  const isFam=currentRole==='family';
+
+  display.forEach(wk=>{
+    const valid=wk.filter(Boolean);
+    if(!valid.length) return;
+    let wkHrs=0, wkPay=0;
+
+    valid.forEach(({day,date,dow})=>{
+      const sd=shiftData[date]||{};
+      const nurseH=calcHrs(sd.nurseStart,sd.nurseEnd);
+      const nannyH=calcHrs(sd.nannyStart,sd.nannyEnd);
+      if(nannyH){ wkHrs+=nannyH; wkPay+=nannyH*RATE; }
+      const wknd=dow>=5;
+
+      // NANNY VIEW: skip weekends entirely (no nanny shift expected)
+      if(!isFam && wknd) return;
+
+      const tr=document.createElement('tr');
+      if(isToday(date)) tr.classList.add('today-row');
+      if(wknd) tr.classList.add('weekend-row');
+
+      if(isFam){
+        // FAMILY VIEW: full editing table with clear button
+        const hasAnyData=sd.nurseStart||sd.nannyStart;
+        tr.innerHTML=`
+          <td><div class="day-cell">
+            <div class="day-name${wknd?' wknd':''}">${DOW[dow]}</div>
+            <div class="day-date">${fmtDate(date)}</div>
+            ${hasAnyData?`<button class="clear-btn" onclick="clearDay('${date}')" title="Clear this day">✕</button>`:''}
+          </div></td>
+          <td><div class="t-input-wrap">
+            <input class="t-input nurse" type="time" value="${sd.nurseStart||''}"
+              onchange="onTime('${date}','nurseStart',this.value)">
+          </div></td>
+          <td><div class="t-input-wrap">
+            <input class="t-input nurse" type="time" value="${sd.nurseEnd||''}"
+              onchange="onTime('${date}','nurseEnd',this.value)">
+          </div></td>
+          <td><div class="t-input-wrap">
+            <input class="t-input${wknd?' wknd-input':''}" type="time" value="${sd.nannyStart||''}"
+              onchange="onTime('${date}','nannyStart',this.value)">
+          </div></td>
+          <td><div class="t-input-wrap">
+            <input class="t-input${wknd?' wknd-input':''}" type="time" value="${sd.nannyEnd||''}"
+              onchange="onTime('${date}','nannyEnd',this.value)">
+          </div></td>
+          <td class="hrs-cell"><span class="hrs-badge nn ${nannyH?'':'empty'}">${nannyH?fmtHrs(nannyH):'—'}</span></td>
+          <td class="pay-cell ${nannyH?'':'empty'}">${nannyH?fmtPay(nannyH):'—'}</td>
+        `;
+      } else {
+        // NANNY VIEW: read-only — day, start, end, hours, pay, status
+        const st=sd.status||'';
+        let statusBadge='';
+        if(st==='confirmed') statusBadge='<span class="status-chip confirmed">✅ Paid & Confirmed</span>';
+        else if(st==='paid') statusBadge='<span class="status-chip paid">💵 Payment Ready</span>';
+        else if(st==='approved') statusBadge='<span class="status-chip approved">✓ Approved</span>';
+        else if(nannyH) statusBadge='<span class="status-chip none">Pending</span>';
+
+        tr.innerHTML=`
+          <td><div class="day-cell">
+            <div class="day-name">${DOW[dow]}</div>
+            <div class="day-date">${fmtDate(date)}</div>
+          </div></td>
+          <td style="padding:8px 10px;font-size:12px;color:var(--ink-mid)">${sd.nannyStart||'—'}</td>
+          <td style="padding:8px 10px;font-size:12px;color:var(--ink-mid)">${sd.nannyEnd||'—'}</td>
+          <td class="hrs-cell"><span class="hrs-badge nn ${nannyH?'':'empty'}">${nannyH?fmtHrs(nannyH):'—'}</span></td>
+          <td class="pay-cell ${nannyH?'':'empty'}">${nannyH?fmtPay(nannyH):'—'}</td>
+          <td style="padding:8px 10px">${statusBadge}</td>
+        `;
+      }
+      tbody.appendChild(tr);
+    });
+
+    // Week total row
+    const wtr=document.createElement('tr');
+    wtr.className='week-total-tr';
+    const wkDates=valid.map(d=>d.date);
+    const wkStatus=getWeekStatus(wkDates);
+    const wkPayStr=fmtPay(wkHrs);
+
+    // Store dates in registry to avoid JSON-in-onclick issues
+    const wkKey='wk_'+valid[0].date.replace(/-/g,'');
+    weekRegistry[wkKey]={dates:wkDates, pay:wkPayStr};
+
+    if(isFam){
+      let actionBtn='';
+      if((wkStatus==='none'||wkStatus===''||wkStatus==='submitted') && wkHrs)
+        actionBtn=`<button class="action-btn btn-approve" onclick="approveWeek('${wkKey}')">✓ Approve</button>`;
+      if(wkStatus==='approved')
+        actionBtn=`<button class="action-btn btn-pay" onclick="markPaid('${wkKey}')">💵 Mark Paid</button>`;
+      if(wkStatus==='paid'||wkStatus==='confirmed') actionBtn='';
+
+      wtr.innerHTML=`
+        <td colspan="4"><div class="wtotal-label">Week of ${fmtDate(valid[0].date)}</div></td>
+        <td class="wtotal-hrs">${wkHrs?fmtHrs(wkHrs):'—'}</td>
+        <td class="wtotal-pay" colspan="2">${wkHrs?wkPayStr:'—'} ${actionBtn}</td>
+      `;
+    } else {
+      // Nanny week total: only show confirm button if paid
+      const weekdays=valid.filter(d=>d.dow<5);
+      const wkNannyHrs=weekdays.reduce((s,d)=>{ const h=calcHrs(shiftData[d.date]?.nannyStart,shiftData[d.date]?.nannyEnd); return s+(h||0); },0);
+      const wkNannyPay=fmtPay(wkNannyHrs);
+      weekRegistry[wkKey].nannyPay=wkNannyPay;
+      let confirmBtn='';
+      if(wkStatus==='paid') confirmBtn=`<button class="action-btn btn-confirm" style="margin-top:8px;width:100%" onclick="confirmPayment('${wkKey}')">✅ Confirm I Received Cash</button>`;
+
+      wtr.innerHTML=`
+        <td><div class="wtotal-label">Week Total</div></td>
+        <td class="wtotal-hrs">${wkNannyHrs?fmtHrs(wkNannyHrs):'—'}</td>
+        <td class="wtotal-pay" colspan="3">${wkNannyHrs?wkNannyPay:'—'}${confirmBtn}</td>
+      `;
+    }
+    tbody.appendChild(wtr);
+  });
+}
+
+function getWeekStatus(dates){
+  const statuses=dates.map(d=>shiftData[d]?.status||'').filter(Boolean);
+  if(!statuses.length) return 'none';
+  // Pick the "highest" status across the week
+  const order=['confirmed','paid','approved','submitted'];
+  for(const s of order){ if(statuses.includes(s)) return s; }
+  return 'none';
+}
+
+function fillStatusChips(date,sd){
+  const apc=document.getElementById('apc-'+date);
+  const pyc=document.getElementById('pyc-'+date);
+  if(!apc||!pyc) return;
+  const st=sd.status||'';
+  // Approval chip
+  if(st==='submitted') apc.innerHTML='<span class="status-chip submitted">⏳ Submitted</span>';
+  else if(st==='approved'||st==='paid'||st==='confirmed') apc.innerHTML='<span class="status-chip approved">✓ Approved</span>';
+  else if(sd.nannyStart) apc.innerHTML='<span class="status-chip none">Pending</span>';
+  else apc.innerHTML='';
+  // Payment chip
+  if(st==='paid') pyc.innerHTML='<span class="status-chip paid">💵 Paid</span>';
+  else if(st==='confirmed') pyc.innerHTML='<span class="status-chip confirmed">✅ Confirmed</span>';
+  else pyc.innerHTML='';
+}
+
+function onTime(date,field,value){
+  if(!shiftData[date]) shiftData[date]={nurseStart:'',nurseEnd:'',nannyStart:'',nannyEnd:'',status:'',paidAt:'',paidBy:'',confirmedAt:'',confirmedBy:'',_row:null};
+  shiftData[date][field]=value;
+  queueSave(date,{[field]:value});
+  // Inline badge update
+  const tr=document.querySelector(`[onchange*="'${date}'"]`)?.closest('tr');
+  if(tr){
+    const sd=shiftData[date];
+    const nannyH=calcHrs(sd.nannyStart,sd.nannyEnd);
+    const nurseH=calcHrs(sd.nurseStart,sd.nurseEnd);
+    const badges=tr.querySelectorAll('.hrs-badge');
+    if(badges[0]){ badges[0].textContent=nurseH?fmtHrs(nurseH):'—'; badges[0].className='hrs-badge n '+(nurseH?'':'empty'); }
+    if(badges[1]){ badges[1].textContent=nannyH?fmtHrs(nannyH):'—'; badges[1].className='hrs-badge nn '+(nannyH?'':'empty'); }
+    const pc=tr.querySelector('.pay-cell');
+    if(pc){ pc.textContent=nannyH?fmtPay(nannyH):'—'; pc.className='pay-cell '+(nannyH?'':'empty'); }
+    fillStatusChips(date,sd);
+  }
+  updateSummary();
+}
+
+// ══════════════════════════════════════════════════════════
+// SUMMARY
+// ══════════════════════════════════════════════════════════
+function updateSummary(){
+  const total=daysInMonth(currentYear,currentMonth);
+  let ns=0,nns=0,hrs=0,pay=0;
+  for(let d=1;d<=total;d++){
+    const date=`${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const sd=shiftData[date]||{};
+    if(sd.nurseStart&&sd.nurseEnd) ns++;
+    const h=calcHrs(sd.nannyStart,sd.nannyEnd);
+    if(h){ nns++; hrs+=h; pay+=h*RATE; }
+  }
+  document.getElementById('s-nshifts').textContent=ns;
+  document.getElementById('s-nnshifts').textContent=nns;
+  document.getElementById('s-hrs').textContent=hrs?hrs.toFixed(1):'0';
+  document.getElementById('s-pay').textContent='$'+pay.toFixed(0);
+  document.getElementById('f-hrs').textContent=fmtHrs(hrs)||'0 hrs';
+  document.getElementById('f-shifts').textContent=nns+' shift'+(nns!==1?'s':'')+' this month';
+  document.getElementById('f-pay').textContent='$'+pay.toFixed(2);
+  document.getElementById('f-rate').textContent='at $'+RATE+'/hr';
+}
+
+// ══════════════════════════════════════════════════════════
+// iCAL IMPORT
+// ══════════════════════════════════════════════════════════
+function importICal(input){
+  const f=input.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=e=>parseICal(e.target.result);
+  r.readAsText(f); input.value='';
+}
+
+function parseICal(text){
+  const blocks=text.split('BEGIN:VEVENT').slice(1);
+  let count=0;
+  blocks.forEach(b=>{
+    const ds=b.match(/DTSTART[^:]*:(\d{8}T?\d{0,6})/)?.[1];
+    const de=b.match(/DTEND[^:]*:(\d{8}T?\d{0,6})/)?.[1];
+    if(!ds) return;
+    const parse=s=>({
+      date:`${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}`,
+      time:s.length>8?`${s.slice(9,11)}:${s.slice(11,13)}`:''
+    });
+    const start=parse(ds), end=de?parse(de):null;
+    const date=start.date;
+    if(!shiftData[date]) shiftData[date]={nurseStart:'',nurseEnd:'',nannyStart:'',nannyEnd:'',status:'',paidAt:'',paidBy:'',confirmedAt:'',confirmedBy:'',_row:null};
+    shiftData[date].nurseStart=start.time||DEF_START;
+    shiftData[date].nurseEnd=end?.time||DEF_END;
+    if(!shiftData[date].nannyStart) shiftData[date].nannyStart=DEF_START;
+    if(!shiftData[date].nannyEnd)   shiftData[date].nannyEnd=DEF_END;
+    queueSave(date,{nurseStart:shiftData[date].nurseStart,nurseEnd:shiftData[date].nurseEnd,nannyStart:shiftData[date].nannyStart,nannyEnd:shiftData[date].nannyEnd});
+    count++;
+  });
+  if(!count){ showToast('No events found in .ics file','err'); return; }
+  showToast(`Imported ${count} shift${count!==1?'s':''} — saving to Google Sheets…`,'info');
+  buildWeekTabs(); renderTable(); updateSummary();
+  // Flush immediately — don't wait for the debounce timer
+  clearTimeout(saveTimer);
+  flushSave().then(()=>{
+    showToast(`${count} shift${count!==1?'s':''} saved to Google Sheets ✓`,'ok');
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// PAYMENT LOG
+// ══════════════════════════════════════════════════════════
+function openLog(){
+  const c=document.getElementById('log-entries');
+  if(!payLog.length){ c.innerHTML='<div class="log-empty">No payment records yet.</div>'; }
+  else {
+    const actionLabel={submitted:'📤 Submitted',approved:'✓ Hours Approved',paid:'💵 Cash Paid',confirmed:'✅ Payment Confirmed'};
+    c.innerHTML=payLog.slice().reverse().map(e=>`
+      <div class="log-entry">
+        <div>
+          <div class="log-entry-date">${fmtDate(e.date)} week</div>
+          <div class="log-entry-detail">${actionLabel[e.action]||e.action} by <strong>${e.by}</strong>${e.weekPay?' — '+e.weekPay:''}</div>
+        </div>
+        <div class="log-entry-status">
+          <span class="status-chip ${e.action==='confirmed'?'confirmed':e.action==='paid'?'paid':e.action==='approved'?'approved':'submitted'}">${actionLabel[e.action]||e.action}</span>
+          <div class="log-stamp">${e.ts}</div>
+        </div>
+      </div>`).join('');
+  }
+  document.getElementById('log-modal').classList.remove('hidden');
+}
+
+function closeLog(){ document.getElementById('log-modal').classList.add('hidden'); }
+
+// ══════════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════════
+async function prevMonth(){ clearTimeout(saveTimer); await flushSave(); currentMonth--; if(currentMonth<0){currentMonth=11;currentYear--;} activeWeek=-1; loadAll(); }
+async function nextMonth(){ clearTimeout(saveTimer); await flushSave(); currentMonth++; if(currentMonth>11){currentMonth=0;currentYear++;} activeWeek=-1; loadAll(); }
+async function goToday(){ clearTimeout(saveTimer); await flushSave(); const n=new Date(); currentYear=n.getFullYear(); currentMonth=n.getMonth(); activeWeek=-1; loadAll(); }
+
+// ══════════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════════
+let tTimer;
+function showToast(msg,type='info'){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='show '+type;
+  clearTimeout(tTimer); tTimer=setTimeout(()=>t.className=type,3000);
+}
+
+// ══════════════════════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════════════════════
+window.onload=()=>{
+  // Clear any stale localStorage keys from previous Google Sheets version
+  ['fd2_sid','fd2_ak'].forEach(k=>localStorage.removeItem(k));
+
+  // Check URL params for pre-configured setup (shared links)
+  const params=new URLSearchParams(window.location.search);
+  const urlFp=params.get('fp');
+  const urlNp=params.get('np');
+  const urlRate=params.get('rate');
+  const urlDs=params.get('ds');
+  const urlDe=params.get('de');
+
+  if(urlFp&&urlNp){
+    FAMILY_PIN=urlFp;
+    NANNY_PIN=urlNp;
+    if(urlRate) RATE=parseFloat(urlRate);
+    if(urlDs) DEF_START=urlDs;
+    if(urlDe) DEF_END=urlDe;
+    persist();
+    window.history.replaceState({},'',window.location.pathname);
+    return;
+  }
+
+  loadPersist();
+  if(!FAMILY_PIN||!NANNY_PIN) openSetup();
+};
+</script>
+</body>
+</html>
